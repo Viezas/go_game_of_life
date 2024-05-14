@@ -3,14 +3,14 @@ package main
 import "fmt"
 
 func main() {
-	firstGeneration := [3][3]bool{{true, false, true}, {false, true, false}, {false, false, true}}
+	firstGeneration := [3][3]bool{{false, true, false}, {true, false, false}, {false, true, false}}
 	var nextGeneration [3][3]bool
 
 	for rowIndex := 0; rowIndex < len(firstGeneration); rowIndex++ {
 		row := firstGeneration[rowIndex]
 
 		for colIndex := 0; colIndex < len(row); colIndex++ {
-			neighborCount := calculateNeighborCount()
+			neighborCount := calculateNeighborCount(firstGeneration, rowIndex, colIndex)
 			alive := row[colIndex]
 
 			if alive && (neighborCount == 2 || neighborCount == 3) {
@@ -32,10 +32,29 @@ func main() {
 	printCells(nextGeneration)
 }
 
-func calculateNeighborCount() int {
-	return 5
+// Calculate and return the number of neighbors for a given cell
+func calculateNeighborCount(cells [3][3]bool, currentRow, currentCol int) int {
+	rowStart := max(currentRow-1, 0)
+	rowEnd := min(currentRow+1, len(cells)-1)
+	colStart := max(currentCol-1, 0)
+	colEnd := min(currentCol+1, len(cells[0])-1)
+	neighborCount := 0
+
+	for rowIndex := rowStart; rowIndex <= rowEnd; rowIndex++ {
+		for colIndex := colStart; colIndex <= colEnd; colIndex++ {
+			isRefCell := rowIndex == currentRow && colIndex == currentCol
+
+			// Increase neigbour count if this is not our reference cell and there is a living neighbour.
+			if !isRefCell && cells[rowIndex][colIndex] {
+				neighborCount++
+			}
+		}
+	}
+
+	return neighborCount
 }
 
+// Print readable cells 
 func printCells(cells [3][3]bool) {
 	for rowIndex := 0; rowIndex < len(cells); rowIndex++ {
 		row := cells[rowIndex]
