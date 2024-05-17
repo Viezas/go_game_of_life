@@ -3,39 +3,23 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 type Cells [20][80]bool
 
 func main() {
-	firstGeneration := generateCells()
-	var nextGeneration Cells
+	cells := generateCells()
 
-	for rowIndex := 0; rowIndex < len(firstGeneration); rowIndex++ {
-		row := firstGeneration[rowIndex]
+	for i := 0; i < 20; i++ {
+		time.Sleep(300 * time.Millisecond)
+		fmt.Println("Current generation:")
+		printCells(cells)
 
-		for colIndex := 0; colIndex < len(row); colIndex++ {
-			neighborCount := calculateNeighborCount(firstGeneration, rowIndex, colIndex)
-			alive := row[colIndex]
-
-			if alive && (neighborCount == 2 || neighborCount == 3) {
-				// KEEP CELL ALIVE
-				nextGeneration[rowIndex][colIndex] = true
-			} else if !alive && neighborCount == 3 {
-				// REVIVE DEAD CELL
-				nextGeneration[rowIndex][colIndex] = true
-			} else {
-				// KILL CELL because of LONELINESS or OVERPOPULATION or cell was ALREADY DEAD
-				nextGeneration[rowIndex][colIndex] = false
-			}
-		}
+		cells = makeNextGeneration(cells)
+		fmt.Println("Next generation:")
+		printCells(cells)
 	}
-
-	fmt.Println("First generation:")
-	printCells(firstGeneration)
-
-	fmt.Println("Next generation:")
-	printCells(nextGeneration)
 }
 
 // Generate cells with random values
@@ -53,6 +37,32 @@ func generateCells() Cells {
 	}
 
 	return cells
+}
+
+// Give birth to next generation fom provided generation
+func makeNextGeneration(generation Cells) Cells {
+	var nextGeneration Cells
+
+	for rowIndex := 0; rowIndex < len(generation); rowIndex++ {
+		row := generation[rowIndex]
+
+		for colIndex := 0; colIndex < len(row); colIndex++ {
+			neighborCount := calculateNeighborCount(generation, rowIndex, colIndex)
+			alive := row[colIndex]
+
+			if alive && (neighborCount == 2 || neighborCount == 3) {
+				// KEEP CELL ALIVE
+				nextGeneration[rowIndex][colIndex] = true
+			} else if !alive && neighborCount == 3 {
+				// REVIVE DEAD CELL
+				nextGeneration[rowIndex][colIndex] = true
+			} else {
+				// KILL CELL because of LONELINESS or OVERPOPULATION or cell was ALREADY DEAD
+				nextGeneration[rowIndex][colIndex] = false
+			}
+		}
+	}
+	return nextGeneration
 }
 
 // Calculate and return the number of neighbors for a given cell
@@ -90,4 +100,5 @@ func printCells(cells Cells) {
 		}
 		fmt.Println()
 	}
+	fmt.Println()
 }
