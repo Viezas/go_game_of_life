@@ -1,11 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+)
 
 type Cells [20][80]bool
 
 func main() {
-	firstGeneration := Cells{{false, true, false}, {true, false, false}, {false, true, false}}
+	firstGeneration := generateCells()
 	var nextGeneration Cells
 
 	for rowIndex := 0; rowIndex < len(firstGeneration); rowIndex++ {
@@ -27,11 +30,29 @@ func main() {
 			}
 		}
 	}
+
 	fmt.Println("First generation:")
 	printCells(firstGeneration)
 
 	fmt.Println("Next generation:")
 	printCells(nextGeneration)
+}
+
+// Generate cells with random values
+func generateCells() Cells {
+	// Initialize cells with default false value
+	var cells Cells
+
+	for rowIndex := 0; rowIndex < len(cells); rowIndex++ {
+		for colIndex := 0; colIndex < len(cells[rowIndex]); colIndex++ {
+			// Generate living cell with 25% chance
+			if rand.Intn(4) == 0 {
+				cells[rowIndex][colIndex] = true
+			}
+		}
+	}
+
+	return cells
 }
 
 // Calculate and return the number of neighbors for a given cell
@@ -62,9 +83,9 @@ func printCells(cells Cells) {
 		row := cells[rowIndex]
 		for colIndex := 0; colIndex < len(row); colIndex++ {
 			if row[colIndex] {
-				fmt.Print("O")
+				fmt.Print("*")
 			} else {
-				fmt.Print("#")
+				fmt.Print(".")
 			}
 		}
 		fmt.Println()
