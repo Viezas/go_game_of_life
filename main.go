@@ -2,9 +2,11 @@ package main
 
 import "fmt"
 
+type Cells [20][80]bool
+
 func main() {
-	firstGeneration := [3][3]bool{{false, true, false}, {true, false, false}, {false, true, false}}
-	var nextGeneration [3][3]bool
+	firstGeneration := Cells{{false, true, false}, {true, false, false}, {false, true, false}}
+	var nextGeneration Cells
 
 	for rowIndex := 0; rowIndex < len(firstGeneration); rowIndex++ {
 		row := firstGeneration[rowIndex]
@@ -33,7 +35,7 @@ func main() {
 }
 
 // Calculate and return the number of neighbors for a given cell
-func calculateNeighborCount(cells [3][3]bool, currentRow, currentCol int) int {
+func calculateNeighborCount(cells Cells, currentRow, currentCol int) int {
 	rowStart := max(currentRow-1, 0)
 	rowEnd := min(currentRow+1, len(cells)-1)
 	colStart := max(currentCol-1, 0)
@@ -44,7 +46,7 @@ func calculateNeighborCount(cells [3][3]bool, currentRow, currentCol int) int {
 		for colIndex := colStart; colIndex <= colEnd; colIndex++ {
 			isRefCell := rowIndex == currentRow && colIndex == currentCol
 
-			// Increase neigbour count if this is not our reference cell and there is a living neighbour.
+			// Increase neighbor count if this is not our reference cell and there is a living neighbor.
 			if !isRefCell && cells[rowIndex][colIndex] {
 				neighborCount++
 			}
@@ -54,8 +56,8 @@ func calculateNeighborCount(cells [3][3]bool, currentRow, currentCol int) int {
 	return neighborCount
 }
 
-// Print readable cells 
-func printCells(cells [3][3]bool) {
+// Print readable cells
+func printCells(cells Cells) {
 	for rowIndex := 0; rowIndex < len(cells); rowIndex++ {
 		row := cells[rowIndex]
 		for colIndex := 0; colIndex < len(row); colIndex++ {
