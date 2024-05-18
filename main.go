@@ -21,7 +21,7 @@ func main() {
 		drawCells(cells, screen)
 
 		// Set time between generations
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(80 * time.Millisecond)
 		cells = makeNextGeneration(cells)
 
 		// Update screen
@@ -45,7 +45,7 @@ func initScreen() tcell.Screen {
 	}
 
 	// Set default text style
-	defStyle := tcell.StyleDefault.Background(tcell.ColorLightGreen).Foreground(tcell.ColorLightGreen)
+	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
 	screen.SetStyle(defStyle)
 
 	return screen
@@ -140,7 +140,7 @@ func calculateNeighborCount(cells Cells, currentRow, currentCol int) int {
 
 // Draw cells
 func drawCells(cells Cells, screen tcell.Screen) {
-	style := tcell.StyleDefault.Background(tcell.ColorDarkViolet).Foreground(tcell.ColorDarkViolet)
+	style := tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorWhite)
 	for rowIndex := 0; rowIndex < len(cells); rowIndex++ {
 		for colIndex := 0; colIndex < len(cells[rowIndex]); colIndex++ {
 			if cells[rowIndex][colIndex] {
