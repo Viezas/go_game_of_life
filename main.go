@@ -2,24 +2,72 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
-	"time"
+	"os"
+	// "time"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 type Cells [20][80]bool
 
 func main() {
-	cells := generateCells()
+	screen, err := tcell.NewScreen()
 
-	for i := 0; i < 20; i++ {
-		time.Sleep(300 * time.Millisecond)
-		fmt.Println("Current generation:")
-		printCells(cells)
-
-		cells = makeNextGeneration(cells)
-		fmt.Println("Next generation:")
-		printCells(cells)
+	if err != nil {
+		log.Fatalf("%+v", err)
 	}
+	if err := screen.Init(); err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	// Set default text style
+	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
+	screen.SetStyle(defStyle)
+
+	// Clear screen
+	screen.Clear()
+
+	screen.SetContent(0, 0, 'H', nil, defStyle)
+	screen.SetContent(1, 0, 'i', nil, defStyle)
+	screen.SetContent(2, 0, '!', nil, defStyle)
+
+	// Finish terminal program
+	quit := func() {
+		screen.Fini()
+		os.Exit(0)
+	}
+
+	for {
+		// Update screen
+		screen.Show()
+
+		// Poll event
+		event := screen.PollEvent()
+
+		// Process event
+		switch event := event.(type) {
+		case *tcell.EventResize:
+			screen.Sync()
+		case *tcell.EventKey:
+			if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyCtrlC {
+				quit()
+			}
+		}
+	}
+
+	// cells := generateCells()
+
+	// for i := 0; i < 20; i++ {
+	// 	time.Sleep(300 * time.Millisecond)
+	// 	fmt.Println("Current generation:")
+	// 	printCells(cells)
+
+	// 	cells = makeNextGeneration(cells)
+	// 	fmt.Println("Next generation:")
+	// 	printCells(cells)
+	// }
 }
 
 // Generate cells with random values
