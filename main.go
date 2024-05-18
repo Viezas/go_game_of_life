@@ -1,18 +1,40 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"os"
-	// "time"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
 
-type Cells [20][80]bool
+type Cells [40][160]bool
 
 func main() {
+	screen := initScreen()
+	cells := generateCells()
+
+	for {
+		// Clear screen
+		screen.Clear()
+		drawCells(cells, screen)
+
+		// Set time between generations
+		time.Sleep(100 * time.Millisecond)
+		cells = makeNextGeneration(cells)
+
+		// Update screen
+		screen.Show()
+
+		if screen.HasPendingEvent() {
+			handleEvent(screen)
+		}
+	}
+}
+
+// Init tcell screen
+func initScreen() tcell.Screen {
 	screen, err := tcell.NewScreen()
 
 	if err != nil {
@@ -23,51 +45,32 @@ func main() {
 	}
 
 	// Set default text style
-	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
+	defStyle := tcell.StyleDefault.Background(tcell.ColorLightGreen).Foreground(tcell.ColorLightGreen)
 	screen.SetStyle(defStyle)
 
-	// Clear screen
-	screen.Clear()
+	return screen
+}
 
-	screen.SetContent(0, 0, 'H', nil, defStyle)
-	screen.SetContent(1, 0, 'i', nil, defStyle)
-	screen.SetContent(2, 0, '!', nil, defStyle)
+// Handle tcell events
+func handleEvent(screen tcell.Screen) {
+	// Poll event
+	event := screen.PollEvent()
 
-	// Finish terminal program
-	quit := func() {
-		screen.Fini()
-		os.Exit(0)
-	}
-
-	for {
-		// Update screen
-		screen.Show()
-
-		// Poll event
-		event := screen.PollEvent()
-
-		// Process event
-		switch event := event.(type) {
-		case *tcell.EventResize:
-			screen.Sync()
-		case *tcell.EventKey:
-			if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyCtrlC {
-				quit()
-			}
+	// Process event
+	switch event := event.(type) {
+	case *tcell.EventResize:
+		screen.Sync()
+	case *tcell.EventKey:
+		if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyCtrlC {
+			quit(screen)
 		}
 	}
+}
 
-	// cells := generateCells()
-
-	// for i := 0; i < 20; i++ {
-	// 	time.Sleep(300 * time.Millisecond)
-	// 	fmt.Println("Current generation:")
-	// 	printCells(cells)
-
-	// 	cells = makeNextGeneration(cells)
-	// 	fmt.Println("Next generation:")
-	// 	printCells(cells)
-	// }
+// Finish terminal program
+func quit(screen tcell.Screen) {
+	screen.Fini()
+	os.Exit(0)
 }
 
 // Generate cells with random values
@@ -135,18 +138,15 @@ func calculateNeighborCount(cells Cells, currentRow, currentCol int) int {
 	return neighborCount
 }
 
-// Print readable cells
-func printCells(cells Cells) {
+// Draw cells
+func drawCells(cells Cells, screen tcell.Screen) {
+	style := tcell.StyleDefault.Background(tcell.ColorDarkViolet).Foreground(tcell.ColorDarkViolet)
 	for rowIndex := 0; rowIndex < len(cells); rowIndex++ {
-		row := cells[rowIndex]
-		for colIndex := 0; colIndex < len(row); colIndex++ {
-			if row[colIndex] {
-				fmt.Print("*")
-			} else {
-				fmt.Print(".")
+		for colIndex := 0; colIndex < len(cells[rowIndex]); colIndex++ {
+			if cells[rowIndex][colIndex] {
+				// Draw a colored cell for living cell
+				screen.SetContent(colIndex, rowIndex, ' ', nil, style)
 			}
 		}
-		fmt.Println()
 	}
-	fmt.Println()
 }
