@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -25,15 +26,27 @@ type Cells [rows][cols]bool
 type Game struct {
 	cells      Cells // Current state of the cells
 	frameCount int   // Counter to control update speed
+	isPaused   bool  // Indicates whether the game is paused
 }
 
 // Update function is called every frame to update the game state
 func (g *Game) Update() error {
-	g.frameCount++
-	if g.frameCount >= 5 { // Update cells approximately every 80ms (5 frames at 60fps)
-		g.cells = makeNextGeneration(g.cells)
-		g.frameCount = 0
+	// Check for play/pause toggle input
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		x, y := ebiten.CursorPosition()
+		if x >= screenWidth-100 && x <= screenWidth-50 && y >= 20 && y <= 60 {
+			g.isPaused = !g.isPaused
+		}
 	}
+
+	if !g.isPaused {
+		g.frameCount++
+		if g.frameCount >= 5 { // Update cells approximately every 80ms (5 frames at 60fps)
+			g.cells = makeNextGeneration(g.cells)
+			g.frameCount = 0
+		}
+	}
+
 	return nil
 }
 
@@ -41,6 +54,9 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.Black)   // Clear the screen with black color
 	drawCells(g.cells, screen) // Draw the cells on the screen
+
+	// Draw play/pause button
+	drawButton(screen, g.isPaused)
 }
 
 // Layout function defines the screen dimensions for the game
@@ -111,6 +127,19 @@ func drawCells(cells Cells, screen *ebiten.Image) {
 				vector.DrawFilledRect(screen, x, y, cellSize, cellSize, color.White, false) // Draw a white cell
 			}
 		}
+	}
+}
+
+// drawButton renders the play/pause button on the screen
+func drawButton(screen *ebiten.Image, isPaused bool) {
+	buttonColor := color.RGBA{0x80, 0x80, 0x80, 0xff} // Gray color for the button
+	if isPaused {
+		vector.DrawFilledRect(screen, float32(screenWidth-100), 20, 50, 40, buttonColor, false)
+		vector.DrawFilledRect(screen, float32(screenWidth-90), 30, 10, 20, color.White, false) // Draw play icon
+	} else {
+		vector.DrawFilledRect(screen, float32(screenWidth-100), 20, 50, 40, buttonColor, false)
+		vector.DrawFilledRect(screen, float32(screenWidth-90), 30, 10, 20, color.White, false) // Draw pause icon
+		vector.DrawFilledRect(screen, float32(screenWidth-70), 30, 10, 20, color.White, false)
 	}
 }
 
