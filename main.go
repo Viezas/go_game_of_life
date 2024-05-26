@@ -1,114 +1,78 @@
 package main
 
 import (
+	"image/color"
 	"log"
 	"math/rand"
-	"os"
-	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-type Cells [40][160]bool
+// Constants for screen dimensions and cell size
+const (
+	screenWidth  = 1600                    // Width of the game window in pixels
+	screenHeight = 400                     // Height of the game window in pixels
+	cellSize     = 10                      // Size of each cell in pixels
+	rows         = screenHeight / cellSize // Number of rows of cells
+	cols         = screenWidth / cellSize  // Number of columns of cells
+)
 
-func main() {
-	screen := initScreen()
-	cells := generateCells()
+// Cells is a 2D array representing the state of each cell (alive or dead)
+type Cells [rows][cols]bool
 
-	for {
-		// Clear screen
-		screen.Clear()
-		drawCells(cells, screen)
-
-		// Set time between generations
-		time.Sleep(80 * time.Millisecond)
-		cells = makeNextGeneration(cells)
-
-		// Update screen
-		screen.Show()
-
-		if screen.HasPendingEvent() {
-			handleEvent(screen)
-		}
-	}
+// Game struct holds the current state of the game
+type Game struct {
+	cells      Cells // Current state of the cells
+	frameCount int   // Counter to control update speed
 }
 
-// Init tcell screen
-func initScreen() tcell.Screen {
-	screen, err := tcell.NewScreen()
-
-	if err != nil {
-		log.Fatalf("%+v", err)
+// Update function is called every frame to update the game state
+func (g *Game) Update() error {
+	g.frameCount++
+	if g.frameCount >= 5 { // Update cells approximately every 80ms (5 frames at 60fps)
+		g.cells = makeNextGeneration(g.cells)
+		g.frameCount = 0
 	}
-	if err := screen.Init(); err != nil {
-		log.Fatalf("%+v", err)
-	}
-
-	// Set default text style
-	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
-	screen.SetStyle(defStyle)
-
-	return screen
+	return nil
 }
 
-// Handle tcell events
-func handleEvent(screen tcell.Screen) {
-	// Poll event
-	event := screen.PollEvent()
-
-	// Process event
-	switch event := event.(type) {
-	case *tcell.EventResize:
-		screen.Sync()
-	case *tcell.EventKey:
-		if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyCtrlC {
-			quit(screen)
-		}
-	}
+// Draw function is called every frame to render the game state
+func (g *Game) Draw(screen *ebiten.Image) {
+	screen.Fill(color.Black)   // Clear the screen with black color
+	drawCells(g.cells, screen) // Draw the cells on the screen
 }
 
-// Finish terminal program
-func quit(screen tcell.Screen) {
-	screen.Fini()
-	os.Exit(0)
+// Layout function defines the screen dimensions for the game
+func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	return screenWidth, screenHeight // Return the screen dimensions
 }
 
-// Generate cells with random values
+// generateCells initializes the cells with random values (alive or dead)
 func generateCells() Cells {
-	// Initialize cells with default false value
 	var cells Cells
-
-	for rowIndex := 0; rowIndex < len(cells); rowIndex++ {
-		for colIndex := 0; colIndex < len(cells[rowIndex]); colIndex++ {
-			// Generate living cell with 25% chance
-			if rand.Intn(4) == 0 {
+	for rowIndex := 0; rowIndex < rows; rowIndex++ {
+		for colIndex := 0; colIndex < cols; colIndex++ {
+			if rand.Intn(4) == 0 { // 25% chance to be alive
 				cells[rowIndex][colIndex] = true
 			}
 		}
 	}
-
 	return cells
 }
 
-// Give birth to next generation fom provided generation
+// makeNextGeneration calculates the next generation of cells based on current state
 func makeNextGeneration(generation Cells) Cells {
 	var nextGeneration Cells
-
-	for rowIndex := 0; rowIndex < len(generation); rowIndex++ {
-		row := generation[rowIndex]
-
-		for colIndex := 0; colIndex < len(row); colIndex++ {
+	for rowIndex := 0; rowIndex < rows; rowIndex++ {
+		for colIndex := 0; colIndex < cols; colIndex++ {
 			neighborCount := calculateNeighborCount(generation, rowIndex, colIndex)
-			alive := row[colIndex]
-
+			alive := generation[rowIndex][colIndex]
 			if alive && (neighborCount == 2 || neighborCount == 3) {
-				// KEEP CELL ALIVE
 				nextGeneration[rowIndex][colIndex] = true
 			} else if !alive && neighborCount == 3 {
-				// REVIVE DEAD CELL
 				nextGeneration[rowIndex][colIndex] = true
 			} else {
-				// KILL CELL because of LONELINESS or OVERPOPULATION or cell was ALREADY DEAD
 				nextGeneration[rowIndex][colIndex] = false
 			}
 		}
@@ -116,37 +80,49 @@ func makeNextGeneration(generation Cells) Cells {
 	return nextGeneration
 }
 
-// Calculate and return the number of neighbors for a given cell
+// calculateNeighborCount returns the number of alive neighbors for a given cell
 func calculateNeighborCount(cells Cells, currentRow, currentCol int) int {
 	rowStart := max(currentRow-1, 0)
-	rowEnd := min(currentRow+1, len(cells)-1)
+	rowEnd := min(currentRow+1, rows-1)
 	colStart := max(currentCol-1, 0)
-	colEnd := min(currentCol+1, len(cells[0])-1)
+	colEnd := min(currentCol+1, cols-1)
 	neighborCount := 0
 
 	for rowIndex := rowStart; rowIndex <= rowEnd; rowIndex++ {
 		for colIndex := colStart; colIndex <= colEnd; colIndex++ {
-			isRefCell := rowIndex == currentRow && colIndex == currentCol
-
-			// Increase neighbor count if this is not our reference cell and there is a living neighbor.
-			if !isRefCell && cells[rowIndex][colIndex] {
+			if rowIndex == currentRow && colIndex == currentCol {
+				continue
+			}
+			if cells[rowIndex][colIndex] {
 				neighborCount++
 			}
 		}
 	}
-
 	return neighborCount
 }
 
-// Draw cells
-func drawCells(cells Cells, screen tcell.Screen) {
-	style := tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorWhite)
-	for rowIndex := 0; rowIndex < len(cells); rowIndex++ {
-		for colIndex := 0; colIndex < len(cells[rowIndex]); colIndex++ {
+// drawCells renders the cells on the screen
+func drawCells(cells Cells, screen *ebiten.Image) {
+	for rowIndex := 0; rowIndex < rows; rowIndex++ {
+		for colIndex := 0; colIndex < cols; colIndex++ {
 			if cells[rowIndex][colIndex] {
-				// Draw a colored cell for living cell
-				screen.SetContent(colIndex, rowIndex, ' ', nil, style)
+				x := float32(colIndex * cellSize)                                           // X coordinate for drawing
+				y := float32(rowIndex * cellSize)                                           // Y coordinate for drawing
+				vector.DrawFilledRect(screen, x, y, cellSize, cellSize, color.White, false) // Draw a white cell
 			}
 		}
+	}
+}
+
+// main initializes the game and starts the game loop
+func main() {
+	game := &Game{
+		cells: generateCells(), // Initialize cells with random values
+	}
+
+	ebiten.SetWindowSize(screenWidth, screenHeight) // Set the size of the window
+	ebiten.SetWindowTitle("Go - Game of Life")      // Set the title of the window
+	if err := ebiten.RunGame(game); err != nil {    // Start the game loop
+		log.Fatal(err) // Log any errors that occur
 	}
 }
