@@ -9,11 +9,13 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-type Cells [40][160]bool
+type Cells [][]bool
 
 func main() {
 	screen := initScreen()
-	cells := generateCells()
+	width, height := 40, 20 // Taille plus petite de la grille initiale
+	cells := generateCells(width, height)
+	speed := 1
 
 	for {
 		// Clear screen
@@ -21,14 +23,14 @@ func main() {
 		drawCells(cells, screen)
 
 		// Set time between generations
-		time.Sleep(80 * time.Millisecond)
+		time.Sleep(time.Duration(80/speed) * time.Millisecond)
 		cells = makeNextGeneration(cells)
 
 		// Update screen
 		screen.Show()
 
 		if screen.HasPendingEvent() {
-			handleEvent(screen)
+			width, height, cells, speed = handleEvent(screen, width, height, cells, speed)
 		}
 	}
 }
@@ -52,7 +54,7 @@ func initScreen() tcell.Screen {
 }
 
 // Handle tcell events
-func handleEvent(screen tcell.Screen) {
+func handleEvent(screen tcell.Screen, width, height int, cells Cells, speed int) (int, int, Cells, int) {
 	// Poll event
 	event := screen.PollEvent()
 
@@ -60,11 +62,24 @@ func handleEvent(screen tcell.Screen) {
 	switch event := event.(type) {
 	case *tcell.EventResize:
 		screen.Sync()
+		newWidth, newHeight := screen.Size()
+		cells = resizeCells(cells, newWidth, newHeight)
+		width, height = newWidth, newHeight
 	case *tcell.EventKey:
 		if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyCtrlC {
 			quit(screen)
 		}
+		// Adjust speed
+		switch event.Rune() {
+		case '1':
+			speed = 1
+		case '2':
+			speed = 2
+		case '4':
+			speed = 4
+		}
 	}
+	return width, height, cells, speed
 }
 
 // Finish terminal program
@@ -74,12 +89,12 @@ func quit(screen tcell.Screen) {
 }
 
 // Generate cells with random values
-func generateCells() Cells {
+func generateCells(width, height int) Cells {
 	// Initialize cells with default false value
-	var cells Cells
-
-	for rowIndex := 0; rowIndex < len(cells); rowIndex++ {
-		for colIndex := 0; colIndex < len(cells[rowIndex]); colIndex++ {
+	cells := make(Cells, height)
+	for rowIndex := 0; rowIndex < height; rowIndex++ {
+		cells[rowIndex] = make([]bool, width)
+		for colIndex := 0; colIndex < width; colIndex++ {
 			// Generate living cell with 25% chance
 			if rand.Intn(4) == 0 {
 				cells[rowIndex][colIndex] = true
@@ -90,14 +105,34 @@ func generateCells() Cells {
 	return cells
 }
 
+// Resize cells to match new dimensions
+func resizeCells(oldCells Cells, width, height int) Cells {
+	newCells := make(Cells, height)
+	for rowIndex := 0; rowIndex < height; rowIndex++ {
+		newCells[rowIndex] = make([]bool, width)
+		for colIndex := 0; colIndex < width; colIndex++ {
+			if rowIndex < len(oldCells) && colIndex < len(oldCells[0]) {
+				newCells[rowIndex][colIndex] = oldCells[rowIndex][colIndex]
+			}
+		}
+	}
+	return newCells
+}
+
 // Give birth to next generation fom provided generation
 func makeNextGeneration(generation Cells) Cells {
+	height := len(generation)
+	width := len(generation[0])
 	var nextGeneration Cells
+	nextGeneration = make(Cells, height)
+	for i := range nextGeneration {
+		nextGeneration[i] = make([]bool, width)
+	}
 
-	for rowIndex := 0; rowIndex < len(generation); rowIndex++ {
+	for rowIndex := 0; rowIndex < height; rowIndex++ {
 		row := generation[rowIndex]
 
-		for colIndex := 0; colIndex < len(row); colIndex++ {
+		for colIndex := 0; colIndex < width; colIndex++ {
 			neighborCount := calculateNeighborCount(generation, rowIndex, colIndex)
 			alive := row[colIndex]
 
@@ -149,4 +184,19 @@ func drawCells(cells Cells, screen tcell.Screen) {
 			}
 		}
 	}
+}
+
+// Helper functions
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
