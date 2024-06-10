@@ -27,6 +27,7 @@ type Game struct {
 	cells      Cells // Current state of the cells
 	frameCount int   // Counter to control update speed
 	isPaused   bool  // Indicates whether the game is paused
+	speed      int   // Speed multiplier for the game update
 }
 
 // Update function is called every frame to update the game state
@@ -39,9 +40,18 @@ func (g *Game) Update() error {
 		}
 	}
 
+	// Adjust speed with number keys
+	if inpututil.IsKeyJustPressed(ebiten.Key1) {
+		g.speed = 1
+	} else if inpututil.IsKeyJustPressed(ebiten.Key2) {
+		g.speed = 2
+	} else if inpututil.IsKeyJustPressed(ebiten.Key4) {
+		g.speed = 4
+	}
+
 	if !g.isPaused {
 		g.frameCount++
-		if g.frameCount >= 5 { // Update cells approximately every 80ms (5 frames at 60fps)
+		if g.frameCount >= 5/g.speed { // Update cells based on the speed multiplier
 			g.cells = makeNextGeneration(g.cells)
 			g.frameCount = 0
 		}
@@ -147,6 +157,7 @@ func drawButton(screen *ebiten.Image, isPaused bool) {
 func main() {
 	game := &Game{
 		cells: generateCells(), // Initialize cells with random values
+		speed: 1,               // Initial speed multiplier
 	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight) // Set the size of the window
