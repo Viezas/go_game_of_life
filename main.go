@@ -229,22 +229,6 @@ func (g *Game) loadPatternFromFile(filename string) {
 	g.cells = resizeCells(pattern, g.rows, g.cols)
 }
 
-// max returns the maximum of two integers
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-// min returns the minimum of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // main initializes the game and starts the game loop
 func main() {
 	game := &Game{
